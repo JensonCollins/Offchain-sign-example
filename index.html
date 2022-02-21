@@ -11,7 +11,7 @@
 <body>
     <div class="container">
         <h1>Sign transaction DEMO</h1>
-        <button id="button">Sign Transaction</button>
+        <button id="button">Sign Transaction(Minting TX)</button>
         <h2 id="hash">Transaction Hash: </h2>
         <button id="sendBtn">Send signed Transaction</button>
         <input id="txHash" type="hidden">
@@ -21,6 +21,7 @@
     <script src="https://cdn.jsdelivr.net/gh/ethereumjs/browser-builds/dist/ethereumjs-tx/ethereumjs-tx-1.3.3.min.js"></script>
     <script>
         const privateKey = "c3da0b1da9785d003abfa62a336eb33ebf44bb9903343d98a1705c61a8e26741";
+        const publicKey = "0x642C1ce675906Ca3e2C3947FFc55b9A9c41D6b3E";
         window.addEventListener('load', function () {
             if (typeof web3 !== 'undefined') {
                 console.log('Web3 Detected! ' + web3.currentProvider.constructor.name)
@@ -32,7 +33,7 @@
         })
 
         $("#button").click(() => {
-            Promise.resolve(interactContract())
+            Promise.resolve(interactContract(privateKey, publicKey, "https://ropsten.infura.io/v3/a4c90e6009f9479589039f807486082c", 3))
                 .then((txHash) => {
                     console.log(txHash);
                     $("#txHash").val(txHash.rawTransaction)
@@ -45,14 +46,11 @@
 
         $("#sendBtn").click(() => {
             const txHash = $("#txHash").val();
-            console.log(txHash);
             const tx = new ethereumjs.Tx(txHash);
             const privKey = ethereumjs.Buffer.Buffer(privateKey, 'hex');
             tx.sign(privKey);
-            console.log(privKey)
 
             const serializedTx = `0x${tx.serialize().toString('hex')}`;
-            console.log(serializedTx);
 
             web3.eth.sendSignedTransaction((serializedTx), (err, transactionHash) => {
                 if(err) {
@@ -65,10 +63,10 @@
             })
         });
 
-        function interactContract() {
+        function interactContract(privateKey, publicKey, rpcUrl, chainId = 3) {
             return new Promise(async (resolve, reject) => {
                 try {
-                    const web3 = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io/v3/a4c90e6009f9479589039f807486082c"));
+                    const web3 = new Web3(new Web3.providers.HttpProvider(rpcUrl));
                     const abiArray = [
         {
         "inputs": [],
@@ -1135,16 +1133,13 @@
         "stateMutability": "view",
         "type": "function"
         }
-    ];
-                    const publicKey = "0x642C1ce675906Ca3e2C3947FFc55b9A9c41D6b3E";              
+    ];         
                     const nftContract = new web3.eth.Contract(abiArray, "0x829488dB2C6223203CE5F168b60FAA4E2788E17A", {from: publicKey});
 
                     // const web3 = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io/v3/a4c90e6009f9479589039f807486082c"));
                     const nonce = await web3.eth.getTransactionCount(publicKey, 'pending');
                     const lastBlock = await web3.eth.getBlock("latest");
                     const gasPrice = await web3.eth.getGasPrice();
-
-                    console.log(nonce);
 
                     const transaction = {
                         from: publicKey,
@@ -1154,11 +1149,10 @@
                         to: "0x829488dB2C6223203CE5F168b60FAA4E2788E17A",
                         value: 0,
                         data: nftContract.methods.create([publicKey], [publicKey], [publicKey], [publicKey], "https://tokenURI.com").encodeABI(),
-                        chainId: 3
+                        chainId: chainId
                     }
 
                     const signedTx = await web3.eth.accounts.signTransaction(transaction, privateKey);
-                    console.log(signedTx);
                     resolve(signedTx);
                 } catch (err) {
                     reject(err);
