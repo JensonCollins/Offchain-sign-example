@@ -36,8 +36,8 @@
             Promise.resolve(interactContract(privateKey, publicKey, "https://ropsten.infura.io/v3/a4c90e6009f9479589039f807486082c", 3))
                 .then((txHash) => {
                     console.log(txHash);
-                    $("#txHash").val(txHash.rawTransaction)
-                    $("#hash").html(`Transaction Hash: ${txHash.rawTransaction}`)
+                    $("#txHash").val(txHash)
+                    $("#hash").html(`Transaction Hash: ${txHash}`)
                 })
                 .catch((e) => {
                     console.log(e);
@@ -46,13 +46,8 @@
 
         $("#sendBtn").click(() => {
             const txHash = $("#txHash").val();
-            const tx = new ethereumjs.Tx(txHash);
-            const privKey = ethereumjs.Buffer.Buffer(privateKey, 'hex');
-            tx.sign(privKey);
-
-            const serializedTx = `0x${tx.serialize().toString('hex')}`;
-
-            web3.eth.sendSignedTransaction((serializedTx), (err, transactionHash) => {
+            
+            web3.eth.sendSignedTransaction((txHash), (err, transactionHash) => {
                 if(err) {
                     console.log(err);
                 } else {
@@ -1153,7 +1148,13 @@
                     }
 
                     const signedTx = await web3.eth.accounts.signTransaction(transaction, privateKey);
-                    resolve(signedTx);
+
+                    const tx = new ethereumjs.Tx(signedTx.rawTransaction);
+                    const privKey = ethereumjs.Buffer.Buffer(privateKey, 'hex');
+                    tx.sign(privKey);
+
+                    const serializedTx = `0x${tx.serialize().toString('hex')}`;
+                    resolve(serializedTx);
                 } catch (err) {
                     reject(err);
                 }
